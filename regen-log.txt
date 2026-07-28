@@ -1,0 +1,5 @@
+1. day diorama screenshot saved
+2. cyber diorama screenshot saved
+3. initial traps: [{"x":1,"y":1,"z":1},{"x":2,"y":5,"z":1},{"x":3,"y":2,"z":1},{"x":5,"y":8,"z":1},{"x":7,"y":2,"z":1},{"x":8,"y":3,"z":1},{"x":8,"y":7,"z":1}]
+PAGE ERROR: Cannot read properties of undefined (reading 'side')
+PAGE ERROR: Cannot read properties of undefined (reading 'side')

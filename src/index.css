@@ -1,0 +1,1259 @@
+@import url('https://fonts.googleapis.com/css2?family=Titan+One&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
+
+:root {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: #0f172a;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(245, 158, 11, 0.4);
+  border-radius: 9999px;
+}
+
+/* ==========================================================================
+   LAYOUT UTILITIES
+   (utility classes used across components — required for the canvas
+   container to fill the viewport, otherwise the map collapses to 0px)
+   ========================================================================== */
+.w-full { width: 100%; }
+.h-full { height: 100%; }
+.w-screen { width: 100vw; }
+.h-screen { height: 100vh; }
+.block { display: block; }
+.relative { position: relative; }
+.absolute { position: absolute; }
+.fixed { position: fixed; }
+.inset-0 { inset: 0; }
+.overflow-hidden { overflow: hidden; }
+.select-none { user-select: none; -webkit-user-select: none; }
+.pointer-events-none { pointer-events: none; }
+.cursor-pointer { cursor: pointer; }
+.cursor-grabbing { cursor: grabbing; }
+.transition-all { transition-property: all; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); }
+.duration-700 { transition-duration: 700ms; }
+
+/* ==========================================================================
+   STATS UI (WINS/LOSSES)
+   ========================================================================== */
+.stats-container {
+  position: absolute;
+  top: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  gap: 1rem;
+  pointer-events: none;
+  user-select: none;
+}
+
+.stat-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  color: white;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.stat-pill.wins svg {
+  color: #fbbf24;
+}
+
+.stat-pill.losses svg {
+  color: #fb7185;
+}
+
+/* ==========================================================================
+   CANVAS CAMERA ZOOM CONTROLS
+   ========================================================================== */
+.canvas-zoom-controls {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.zoom-btn {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #e2e8f0;
+  padding: 10px;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.zoom-btn:hover {
+  background: rgba(30, 41, 59, 0.95);
+  border-color: rgba(245, 158, 11, 0.6);
+  color: #fde047;
+}
+
+.zoom-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* ==========================================================================
+   SPEECH BUBBLE COMPONENT STYLES
+   ========================================================================== */
+.speech-bubble-wrapper {
+  position: absolute;
+  pointer-events: none;
+  z-index: 40;
+  transform: translate(-50%, -100%);
+  margin-top: -16px;
+  user-select: none;
+}
+
+.speech-bubble-card {
+  position: relative;
+  background-color: #ffffff;
+  color: #0f172a;
+  font-weight: 800;
+  font-size: 14px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  border: 2px solid #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.speech-bubble-text {
+  letter-spacing: -0.01em;
+}
+
+.speech-bubble-emoji {
+  font-size: 18px;
+  display: inline-block;
+  animation: bounceEmoji 1.5s ease-in-out infinite;
+}
+
+@keyframes bounceEmoji {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+.speech-arrow-outer {
+  position: absolute;
+  left: 50%;
+  bottom: -10px;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 10px solid #0f172a;
+}
+
+.speech-arrow-inner {
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 8px solid #ffffff;
+}
+
+/* ==========================================================================
+   WIN / GAME OVER OVERLAY
+   ========================================================================== */
+.game-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2, 6, 23, 0.45);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  animation: overlayFadeIn 0.35s ease;
+}
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.game-overlay-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 28px 36px;
+  border-radius: 24px;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  color: #ffffff;
+  text-align: center;
+  animation: overlayPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes overlayPop {
+  from { transform: scale(0.6) translateY(24px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.game-overlay-card.win { border-color: rgba(251, 191, 36, 0.55); }
+.game-overlay-card.lose { border-color: rgba(244, 63, 94, 0.55); }
+
+.game-overlay-icon {
+  width: 44px;
+  height: 44px;
+}
+
+.game-overlay-card.win .game-overlay-icon { color: #fbbf24; }
+.game-overlay-card.lose .game-overlay-icon { color: #f43f5e; }
+
+.game-overlay-title {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.game-overlay-text {
+  font-size: 13px;
+  color: #94a3b8;
+  margin-bottom: 6px;
+}
+
+.game-overlay-btn {
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+  border: none;
+  color: #0f172a;
+  font-weight: 800;
+  font-size: 14px;
+  font-family: inherit;
+  padding: 10px 26px;
+  border-radius: 9999px;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.game-overlay-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px rgba(245, 158, 11, 0.55);
+}
+
+/* ==========================================================================
+   THEME TOGGLE (Dark / Light Mode)
+   ========================================================================== */
+.top-right-controls {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  transition: top 0.3s ease;
+}
+
+.theme-toggle {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 55;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.theme-toggle-track {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 76px;
+  height: 38px;
+  padding: 0 9px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35), inset 0 1px 2px rgba(255, 255, 255, 0.2);
+  transition: background 0.45s ease;
+}
+
+.theme-toggle.light .theme-toggle-track {
+  background: linear-gradient(135deg, #7dd3fc, #38bdf8);
+}
+
+.theme-toggle.dark .theme-toggle-track {
+  background: linear-gradient(135deg, #312e81, #701a75);
+}
+
+.theme-toggle-thumb {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.35s ease;
+}
+
+.theme-toggle.dark .theme-toggle-thumb {
+  transform: translateX(38px);
+  background: #e9d5ff;
+}
+
+.theme-toggle-sun,
+.theme-toggle-moon {
+  width: 16px;
+  height: 16px;
+  z-index: 1;
+  transition: color 0.35s ease, opacity 0.35s ease;
+}
+
+.theme-toggle.light .theme-toggle-sun { color: #b45309; }
+.theme-toggle.light .theme-toggle-moon { color: rgba(255, 255, 255, 0.75); }
+.theme-toggle.dark .theme-toggle-sun { color: rgba(255, 255, 255, 0.5); }
+.theme-toggle.dark .theme-toggle-moon { color: #4c1d95; }
+
+/* ==========================================================================
+   WIN / LOSE COMPACT TOAST (replaces the big modal)
+   ========================================================================== */
+.game-toast {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  color: #ffffff;
+  animation: toastPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  max-width: calc(100vw - 32px);
+}
+
+@keyframes toastPop {
+  from { transform: translateX(-50%) translateY(-30px) scale(0.7); opacity: 0; }
+  to { transform: translateX(-50%) translateY(0) scale(1); opacity: 1; }
+}
+
+.game-toast.win { border-color: rgba(251, 191, 36, 0.55); }
+.game-toast.lose { border-color: rgba(244, 63, 94, 0.55); }
+
+.game-toast-icon {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+}
+
+.game-toast.win .game-toast-icon { color: #fbbf24; }
+.game-toast.lose .game-toast-icon { color: #f43f5e; }
+
+.game-toast-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.game-toast-title {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.game-toast-sub {
+  font-size: 11px;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.game-toast-btn {
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+  border: none;
+  color: #0f172a;
+  font-weight: 800;
+  font-size: 12px;
+  font-family: inherit;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.game-toast-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(245, 158, 11, 0.55);
+}
+
+@media (max-width: 768px) {
+  .stats-container {
+    top: auto;
+    bottom: 40px;
+    width: 100%;
+    padding: 0 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+  .stat-pill {
+    padding: 6px 12px;
+    font-size: 12px !important;
+  }
+  .stat-pill svg {
+    width: 14px;
+    height: 14px;
+  }
+  .dev-pill {
+    width: 100%;
+    justify-content: center;
+    margin-top: 4px;
+  }
+  .canvas-zoom-controls {
+    top: 16px;
+    left: 16px;
+  }
+  .theme-toggle {
+    top: 16px;
+    right: 16px;
+  }
+}
+
+.landscape-suggestion {
+  display: none;
+}
+
+@media (max-width: 768px) and (orientation: portrait) {
+  .landscape-suggestion {
+    display: flex;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: #fbbf24;
+    padding: 10px 0;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    z-index: 100;
+    pointer-events: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+  .landscape-icon {
+    animation: rotatePhone 2s infinite ease-in-out;
+  }
+  .canvas-zoom-controls {
+    top: 50px;
+  }
+  .theme-toggle {
+    top: 50px;
+  }
+}
+
+@keyframes rotatePhone {
+  0% { transform: rotate(0deg); }
+  50% { transform: rotate(-90deg); }
+  100% { transform: rotate(0deg); }
+}
+
+@media (max-width: 480px) {
+  .game-toast-sub { display: none; }
+}
+
+.theme-toggle-track {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 76px;
+  height: 38px;
+  padding: 0 9px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35), inset 0 1px 2px rgba(255, 255, 255, 0.2);
+  transition: background 0.45s ease;
+}
+
+.theme-toggle.light .theme-toggle-track {
+  background: linear-gradient(135deg, #7dd3fc, #38bdf8);
+}
+
+.theme-toggle.dark .theme-toggle-track {
+  background: linear-gradient(135deg, #312e81, #701a75);
+}
+.theme-toggle-thumb {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.35s ease;
+}
+
+.theme-toggle.dark .theme-toggle-thumb {
+  transform: translateX(38px);
+  background: #e9d5ff;
+}
+
+.theme-toggle-sun,
+.theme-toggle-moon {
+  width: 16px;
+  height: 16px;
+  z-index: 1;
+  transition: color 0.35s ease, opacity 0.35s ease;
+}
+
+.theme-toggle.light .theme-toggle-sun { color: #b45309; }
+.theme-toggle.light .theme-toggle-moon { color: rgba(255, 255, 255, 0.75); }
+.theme-toggle.dark .theme-toggle-sun { color: rgba(255, 255, 255, 0.5); }
+.theme-toggle.dark .theme-toggle-moon { color: #4c1d95; }
+
+/* ==========================================================================
+   WIN / LOSE COMPACT TOAST (replaces the big modal)
+   ========================================================================== */
+.game-toast {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  color: #ffffff;
+  animation: toastPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  max-width: calc(100vw - 32px);
+}
+
+@keyframes toastPop {
+  from { transform: translateX(-50%) translateY(-30px) scale(0.7); opacity: 0; }
+  to { transform: translateX(-50%) translateY(0) scale(1); opacity: 1; }
+}
+
+.game-toast.win { border-color: rgba(251, 191, 36, 0.55); }
+.game-toast.lose { border-color: rgba(244, 63, 94, 0.55); }
+
+.game-toast-icon {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+}
+
+.game-toast.win .game-toast-icon { color: #fbbf24; }
+.game-toast.lose .game-toast-icon { color: #f43f5e; }
+
+.game-toast-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.game-toast-title {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.game-toast-sub {
+  font-size: 11px;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.game-toast-btn {
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+  border: none;
+  color: #0f172a;
+  font-weight: 800;
+  font-size: 12px;
+  font-family: inherit;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.game-toast-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(245, 158, 11, 0.55);
+}
+
+@media (max-width: 768px) {
+  .stats-container {
+    top: auto;
+    bottom: 40px;
+    width: 100%;
+    padding: 0 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+  .stat-pill {
+    padding: 6px 12px;
+    font-size: 12px !important;
+  }
+  .stat-pill svg {
+    width: 14px;
+    height: 14px;
+  }
+  .dev-pill {
+    width: 100%;
+    justify-content: center;
+    margin-top: 4px;
+  }
+  .canvas-zoom-controls {
+    top: 16px;
+    left: 16px;
+  }
+  .theme-toggle {
+    top: 16px;
+    right: 16px;
+  }
+}
+
+.landscape-suggestion {
+  display: none;
+}
+
+@media (max-width: 768px) and (orientation: portrait) {
+  .landscape-suggestion {
+    display: flex;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: #fbbf24;
+    padding: 10px 0;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    z-index: 100;
+    pointer-events: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+  .landscape-icon {
+    animation: rotatePhone 2s infinite ease-in-out;
+  }
+  .canvas-zoom-controls {
+    top: 56px;
+  }
+  .theme-toggle {
+    top: 56px;
+  }
+  .top-right-controls {
+    top: 56px;
+  }
+  .game-toast {
+    top: 56px !important;
+  }
+}
+
+@keyframes rotatePhone {
+  0% { transform: rotate(0deg); }
+  50% { transform: rotate(-90deg); }
+  100% { transform: rotate(0deg); }
+}
+
+@media (max-width: 480px) {
+  .game-toast-sub { display: none; }
+}
+
+.theme-toggle-track {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 76px;
+  height: 38px;
+  padding: 0 9px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35), inset 0 1px 2px rgba(255, 255, 255, 0.2);
+  transition: background 0.45s ease;
+}
+
+.theme-toggle.light .theme-toggle-track {
+  background: linear-gradient(135deg, #7dd3fc, #38bdf8);
+}
+
+.theme-toggle.dark .theme-toggle-track {
+  background: linear-gradient(135deg, #312e81, #701a75);
+}
+
+.theme-toggle-thumb {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.35s ease;
+}
+
+.theme-toggle.dark .theme-toggle-thumb {
+  transform: translateX(38px);
+  background: #e9d5ff;
+}
+
+.theme-toggle-sun,
+.theme-toggle-moon {
+  width: 16px;
+  height: 16px;
+  z-index: 1;
+  transition: color 0.35s ease, opacity 0.35s ease;
+}
+
+.theme-toggle.light .theme-toggle-sun { color: #b45309; }
+.theme-toggle.light .theme-toggle-moon { color: rgba(255, 255, 255, 0.75); }
+.theme-toggle.dark .theme-toggle-sun { color: rgba(255, 255, 255, 0.5); }
+.theme-toggle.dark .theme-toggle-moon { color: #4c1d95; }
+
+/* ==========================================================================
+   WIN / LOSE COMPACT TOAST
+   ========================================================================== */
+.game-toast {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  color: #ffffff;
+  animation: toastPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  max-width: calc(100vw - 32px);
+}
+
+@keyframes toastPop {
+  from { transform: translateX(-50%) translateY(-30px) scale(0.7); opacity: 0; }
+  to { transform: translateX(-50%) translateY(0) scale(1); opacity: 1; }
+}
+
+.game-toast.win { border-color: rgba(251, 191, 36, 0.55); }
+.game-toast.lose { border-color: rgba(244, 63, 94, 0.55); }
+
+.game-toast-icon {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+}
+
+.game-toast.win .game-toast-icon { color: #fbbf24; }
+.game-toast.lose .game-toast-icon { color: #f43f5e; }
+
+.game-toast-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.game-toast-title {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.game-toast-sub {
+  font-size: 11px;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.game-toast-btn {
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+  border: none;
+  color: #0f172a;
+  font-weight: 800;
+  font-size: 12px;
+  font-family: inherit;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.game-toast-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(245, 158, 11, 0.55);
+}
+
+/* ==========================================================================
+   AZORE INSTRUCTIONS MODAL
+   ========================================================================== */
+.azore-instructions {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2, 6, 23, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: overlayFadeIn 0.3s ease;
+  padding: 20px;
+}
+
+.azore-instructions-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 28px;
+  padding: 32px 24px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255,255,255,0.1);
+  animation: overlayPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  text-align: center;
+}
+
+.azore-step-icon {
+  margin-bottom: 16px;
+  animation: bounceEmoji 2s infinite ease-in-out;
+}
+
+.azore-step-title {
+  font-family: 'Titan One', 'Baloo 2', system-ui, sans-serif;
+  font-size: 32px;
+  margin-bottom: 16px;
+  letter-spacing: 1.5px;
+  /* Glossy 3D Blue Effect */
+  background: linear-gradient(180deg, #93c5fd 0%, #3b82f6 40%, #1d4ed8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 1.5px #1e3a8a;
+  filter: drop-shadow(0px 4px 0px #1e3a8a) drop-shadow(0px 8px 16px rgba(30,58,138,0.5));
+  line-height: 1.2;
+}
+
+.azore-step-text {
+  font-size: 15px;
+  color: #cbd5e1;
+  line-height: 1.6;
+  margin-bottom: 28px;
+  font-weight: 500;
+}
+
+.azore-step-dots {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+
+.azore-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.azore-dot.active {
+  background: #60a5fa;
+  transform: scale(1.3);
+  box-shadow: 0 0 8px rgba(96, 165, 250, 0.6);
+}
+
+.azore-step-actions {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.azore-step-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  border: none;
+  color: white;
+  font-weight: 800;
+  font-size: 15px;
+  font-family: inherit;
+  padding: 12px 20px;
+  border-radius: 9999px;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+
+.azore-step-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.4);
+}
+
+.azore-step-btn:active {
+  transform: translateY(1px);
+}
+
+.azore-step-btn.ghost {
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+  color: #cbd5e1;
+}
+
+.azore-step-btn.ghost:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+}
+
+/* ==========================================================================
+   AZORE PRELOADER — 3D bubble letters in a rainbow arc
+   ========================================================================== */
+.azore-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 38%, #1e293b 0%, #0f172a 55%, #020617 100%);
+  overflow: hidden;
+  cursor: pointer;
+  animation: azoreIntroFadeIn 0.4s ease;
+}
+
+.azore-intro.leaving {
+  animation: azoreIntroFadeOut 0.85s ease forwards;
+  pointer-events: none;
+}
+
+@keyframes azoreIntroFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes azoreIntroFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.azore-intro-title {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0;
+  margin: 0;
+  font-family: 'Titan One', 'Baloo 2', 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: min(28px, calc((100vw - 40px) / 28));
+  line-height: 2.6em;
+  letter-spacing: 2px;
+  max-width: 96vw;
+}
+
+.azore-intro-word { display: none; }
+
+.az-bubble-slot {
+  display: inline-flex;
+  align-items: flex-end;
+  transform-origin: center bottom;
+}
+
+.az-bubble-gap {
+  display: inline-block;
+  width: 0.8em;
+  height: 1em;
+}
+
+.az-bubble {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 0.045em;
+  font-weight: 700;
+  font-size: 1.5em;
+  
+  /* Bubbly Blue Glossy Effect matching the image */
+  background: linear-gradient(180deg, #93c5fd 0%, #3b82f6 40%, #1d4ed8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 1.5px #1e3a8a;
+  filter: drop-shadow(0px 3px 0px #1e3a8a) drop-shadow(0px 6px 12px rgba(30,58,138,0.5));
+  
+  opacity: 0;
+  transform: scale(0) translateY(18px);
+  transform-origin: center bottom;
+  animation: azBubblePop 0.55s cubic-bezier(0.34, 1.75, 0.5, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.azore-intro.leaving .az-bubble {
+  animation: azBubbleOut 0.55s cubic-bezier(0.5, 0, 0.75, 0) forwards;
+  animation-delay: 0s !important;
+}
+
+@keyframes azBubblePop {
+  0% { opacity: 0; transform: scale(0) translateY(18px) rotate(-10deg); }
+  60% { opacity: 1; transform: scale(1.2) translateY(-6px) rotate(4deg); }
+  80% { transform: scale(0.93) translateY(0) rotate(-1deg); }
+  100% { opacity: 1; transform: scale(1) translateY(0) rotate(0); }
+}
+
+@keyframes azBubbleOut {
+  0% { opacity: 1; transform: scale(1) translateY(0); }
+  100% { opacity: 0; transform: scale(0.2) translateY(-42px) rotate(8deg); }
+}
+
+.azore-intro-tag {
+  position: absolute;
+  bottom: 40px;
+  font-size: 13px;
+  color: #64748b;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  animation: pulseTag 2s infinite ease-in-out;
+}
+
+@keyframes pulseTag {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.9; }
+}
+
+/* ==========================================================================
+   AZORE WORLD — GLOSSY BUBBLY FONT OVERRIDES (User Request)
+   ========================================================================== */
+
+/* Apply to Instructions Modal Card - Bubble Theme */
+.azore-instructions-card {
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 2px solid rgba(255, 255, 255, 0.8) !important;
+  box-shadow: 0 24px 60px rgba(6, 182, 212, 0.15), inset 0 2px 10px rgba(255,255,255,0.9) !important;
+  border-radius: 36px !important;
+}
+
+/* Apply to Instructions Modal Text */
+.azore-step-text {
+  color: #334155 !important;
+  font-weight: 600 !important;
+}
+
+/* Apply to Instructions Modal Title */
+.azore-step-title {
+  font-family: 'Titan One', 'Baloo 2', system-ui, sans-serif !important;
+  font-size: 32px !important;
+  font-weight: normal !important;
+  letter-spacing: 1.5px !important;
+  
+  /* Light Sky Blue Bubble Effect */
+  background: linear-gradient(180deg, #e0f2fe 0%, #7dd3fc 40%, #0ea5e9 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  -webkit-text-stroke: 1.5px #0284c7 !important;
+  filter: drop-shadow(0px 4px 0px #0369a1) drop-shadow(0px 8px 16px rgba(14, 165, 233, 0.4)) !important;
+}
+
+/* Apply to Preloader Title Container */
+.azore-intro {
+  background: radial-gradient(circle at 50% 50%, #ffffff 0%, #f0fdfa 50%, #e0f2fe 100%) !important;
+}
+
+.azore-intro-title {
+  font-family: 'Titan One', 'Baloo 2', sans-serif !important;
+  letter-spacing: 2px !important;
+  /* Scale based on viewport width to maintain the arch */
+  font-size: clamp(14px, 3.8vw, 64px) !important;
+  flex-wrap: nowrap !important;
+  white-space: nowrap !important;
+  text-align: center !important;
+  justify-content: center !important;
+}
+
+@media (max-width: 768px) and (orientation: portrait) {
+  .azore-intro-title {
+    /* Need to be quite small to fit 20 letters across a narrow portrait screen */
+    font-size: clamp(10px, 4.2vw, 24px) !important;
+    letter-spacing: 0px !important;
+  }
+}
+
+/* Apply to Individual Preloader Bubbles */
+.az-bubble {
+  font-family: 'Titan One', 'Baloo 2', sans-serif !important;
+  font-weight: normal !important;
+  font-size: 1.5em !important;
+  
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  
+  /* Light Sky Blue Bubble Effect */
+  background: linear-gradient(180deg, #e0f2fe 0%, #7dd3fc 40%, #0ea5e9 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  -webkit-text-stroke: 1.5px #0284c7 !important;
+  filter: drop-shadow(0px 3px 0px #0369a1) drop-shadow(0px 8px 16px rgba(14, 165, 233, 0.4)) !important;
+}
+
+/* Hide the pseudo-element highlight since we use text gradient now */
+.az-bubble::before {
+  display: none !important;
+}
+
+/* ==========================================================================
+   ENHANCED UI OVERRIDES
+   ========================================================================== */
+
+/* Instructions Modal Header */
+.az-step-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 2px;
+}
+
+.az-step-kicker {
+  color: #0ea5e9;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.az-step-counter {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Enhanced Black UI for Buttons/Pills */
+.reset-btn {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+  transition: all 0.2s ease !important;
+  text-decoration: none !important;
+}
+
+.reset-btn:hover {
+  background: #020617 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Highlight the developer's name inside the pill */
+.dev-pill span {
+  color: #ffffff !important;
+}
+
+/* Fix Instructions Modal Back Button (Ghost) for Light Theme */
+.azore-step-btn.ghost {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06) !important;
+  border: 1px solid rgba(15, 23, 42, 0.05) !important;
+}
+
+.azore-step-btn.ghost:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Ensure Game Over / Win toasts stay above landscape suggestion */
+.game-toast {
+  z-index: 9999 !important;
+}
