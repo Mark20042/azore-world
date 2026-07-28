@@ -76,7 +76,7 @@ export const ThreeWorld: React.FC<ThreeWorldProps> = ({
     const h = window.innerHeight;
     const isMobile = Math.min(w, h) < 768;
     if (isMobile) {
-      return 0.45; // Zoomed out enough for mobile landscape and portrait
+      return 0.3; // Zoomed out for mobile
     }
     return 1.2;
   };
@@ -453,7 +453,7 @@ export const ThreeWorld: React.FC<ThreeWorldProps> = ({
       const w = mount.clientWidth;
       const h = mount.clientHeight;
       if (w === 0 || h === 0) return;
-      renderer.setSize(w, h, false);
+      renderer.setSize(w, h);
       const aspect = w / h;
       camera.left = (-FRUSTUM_SIZE * aspect) / 2;
       camera.right = (FRUSTUM_SIZE * aspect) / 2;
