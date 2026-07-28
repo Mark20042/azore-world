@@ -76,7 +76,7 @@ export const ThreeWorld: React.FC<ThreeWorldProps> = ({
     const h = window.innerHeight;
     const isMobile = Math.min(w, h) < 768;
     if (isMobile) {
-      return 0.3; // Zoomed out for mobile
+      return 0.55; // Zoomed out for mobile
     }
     return 1.2;
   };
