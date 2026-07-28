@@ -99,7 +99,7 @@ export function App() {
       style={{
         background: skyBackground,
         width: '100vw',
-        height: '100vh',
+        height: '100dvh',
         position: 'fixed',
         top: 0,
         left: 0,
@@ -144,7 +144,7 @@ export function App() {
           className="stat-pill dev-pill" 
           style={{ pointerEvents: 'auto', textDecoration: 'none', color: 'rgba(255,255,255,0.85)' }}
         >
-          Developed By: <span style={{ color: '#ffffff', fontWeight: 600 }}>Mark Joseph Potot</span>
+          <span className="dev-prefix">Developed By:</span> <span style={{ color: '#ffffff', fontWeight: 600 }}>Mark Joseph Potot</span>
         </a>
       </div>
       <div className="landscape-suggestion">
@@ -165,9 +165,9 @@ export function App() {
       <div className="top-right-controls" style={{ display: 'flex', gap: '12px', zIndex: 100, alignItems: 'center' }}>
         <button 
           onClick={() => setIsMuted(prev => !prev)}
-          className="stat-pill"
+          className="stat-pill volume-btn"
           title={isMuted ? "Unmute Sound" : "Mute Sound"}
-          style={{ pointerEvents: 'auto', padding: '0 12px', height: '32px' }}
+          style={{ pointerEvents: 'auto' }}
         >
           {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
         </button>
