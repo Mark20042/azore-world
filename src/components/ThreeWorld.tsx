@@ -206,7 +206,7 @@ export const ThreeWorld: React.FC<ThreeWorldProps> = ({
       confetti({ particleCount: 90, spread: 100, origin: { y: 0.4 } });
     }, 450);
   };
-  const startFall = () => {
+  const startFall = (reason: 'trap' | 'stuck' = 'trap') => {
     const char = charRef.current;
     if (!char) return;
     const current = charTileRef.current;
@@ -224,8 +224,8 @@ export const ThreeWorld: React.FC<ThreeWorldProps> = ({
     setCharacterState(prev => ({
       ...prev,
       isMoving: false,
-      speechText: 'Ahhh!',
-      speechEmoji: '😭',
+      speechText: reason === 'stuck' ? "I'm stuck!" : 'Ahhh!',
+      speechEmoji: reason === 'stuck' ? '😱' : '😭',
       speechId: Date.now()
     }));
   };
@@ -294,10 +294,26 @@ export const ThreeWorld: React.FC<ThreeWorldProps> = ({
     const arrived = path.tiles[path.index];
     charTileRef.current = { x: arrived.x, y: arrived.y, z: arrived.z };
     if (path.index % 2 === 0) playStepSound(mutedRef.current);
-    if (arrived.isTrap) { startFall(); return; }
+    if (arrived.isTrap) { startFall('trap'); return; }
     if (arrived.isGoal) { startWin(); return; }
     if (path.index >= path.points.length - 1) {
       pathRef.current = null;
+      
+      const hasMoves = [
+        { x: arrived.x + 1, y: arrived.y },
+        { x: arrived.x - 1, y: arrived.y },
+        { x: arrived.x, y: arrived.y + 1 },
+        { x: arrived.x, y: arrived.y - 1 }
+      ].some(pos => {
+        const t = presetRef.current.tiles.find(tile => tile.x === pos.x && tile.y === pos.y);
+        return t && t.terrain !== 'water' && !t.hasTree && !t.hasRock && !(t as any).isCollapsed;
+      });
+
+      if (!hasMoves) {
+        startFall('stuck');
+        return;
+      }
+
       modeRef.current = 'idle';
       setCharacterState(prev => ({
         ...prev,
