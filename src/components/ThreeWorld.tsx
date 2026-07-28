@@ -76,8 +76,7 @@ export const ThreeWorld: React.FC<ThreeWorldProps> = ({
     const h = window.innerHeight;
     const isMobile = Math.min(w, h) < 768;
     if (isMobile) {
-      if (w > h) return 0.95; // landscape (larger zoom)
-      return 0.45; // portrait
+      return 0.45; // Zoomed out enough for mobile landscape and portrait
     }
     return 1.2;
   };
@@ -641,7 +640,7 @@ export const ThreeWorld: React.FC<ThreeWorldProps> = ({
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     if (!isCanvasEvent(e)) return;
     const factor = e.deltaY < 0 ? 1.12 : 0.89;
-    setZoom(prev => THREE.MathUtils.clamp(prev * factor, 0.55, 2.4));
+    setZoom(prev => THREE.MathUtils.clamp(prev * factor, 0.25, 2.4));
   };
   useEffect(() => {
     if (!import.meta.env.DEV) return;
@@ -681,14 +680,14 @@ export const ThreeWorld: React.FC<ThreeWorldProps> = ({
       {}
       <div className="canvas-zoom-controls">
         <button
-          onClick={() => setZoom(prev => THREE.MathUtils.clamp(prev + 0.25, 0.55, 2.4))}
+          onClick={() => setZoom(prev => THREE.MathUtils.clamp(prev + 0.25, 0.25, 2.4))}
           className="zoom-btn"
           title="Zoom In"
         >
           <ZoomIn className="zoom-icon" />
         </button>
         <button
-          onClick={() => setZoom(prev => THREE.MathUtils.clamp(prev - 0.25, 0.55, 2.4))}
+          onClick={() => setZoom(prev => THREE.MathUtils.clamp(prev - 0.25, 0.25, 2.4))}
           className="zoom-btn"
           title="Zoom Out"
         >
@@ -696,7 +695,7 @@ export const ThreeWorld: React.FC<ThreeWorldProps> = ({
         </button>
         <button
           onClick={() => {
-            setZoom(1.0);
+            setZoom(getInitialZoom());
             camTargetRef.current.set(0, 0.4, 0);
           }}
           className="zoom-btn"
