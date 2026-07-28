@@ -234,6 +234,7 @@ export function buildWorld(preset: MapPreset, lighting: LightingMode): BuiltWorl
         world.y,
         world.z + (rand() - 0.5) * 0.18
       );
+      tree.userData.tile = tile;
       group.add(tree);
     }
     if (tile.hasRock) {
@@ -279,6 +280,7 @@ export function buildWorld(preset: MapPreset, lighting: LightingMode): BuiltWorl
         world.y,
         world.z + (rand() - 0.5) * 0.2
       );
+      rock.userData.tile = tile;
       group.add(rock);
     }
   });
@@ -318,6 +320,7 @@ export function buildWorld(preset: MapPreset, lighting: LightingMode): BuiltWorl
         world.y,
         world.z + (rand() - 0.5) * 0.3
       );
+      tuft.userData.tile = tile;
       group.add(tuft);
     } else if (roll < 0.5) {
       const flower = new THREE.Group();
@@ -342,10 +345,11 @@ export function buildWorld(preset: MapPreset, lighting: LightingMode): BuiltWorl
       center.position.y = 0.19;
       flower.add(center);
       flower.position.set(
-        world.x + (rand() - 0.5) * 0.4,
+        world.x + (rand() - 0.5) * 0.28,
         world.y,
-        world.z + (rand() - 0.5) * 0.4
+        world.z + (rand() - 0.5) * 0.28
       );
+      flower.userData.tile = tile;
       group.add(flower);
     } else if (roll < 0.6) {
       const pebble = new THREE.Mesh(

@@ -395,9 +395,27 @@ export const ThreeWorld: React.FC<ThreeWorldProps> = ({
     const trap = fallRef.current.trapMesh;
     if (trap) {
       const shrinkT = Math.min(fallRef.current.t / 0.3, 1);
-      const s = 1 - shrinkT * shrinkT;
-      trap.scale.set(Math.max(s, 0.001), Math.max(s, 0.001), Math.max(s, 0.001));
+      const s = Math.max(1 - shrinkT * shrinkT, 0.001);
+      const yOffset = shrinkT * shrinkT * 2.0;
+
+      trap.scale.set(s, s, s);
+      if (trap.userData.startY === undefined) trap.userData.startY = trap.position.y;
+      trap.position.y = trap.userData.startY - yOffset;
       if (shrinkT >= 1) trap.visible = false;
+
+      const world = worldRef.current;
+      if (world) {
+        world.group.children.forEach(child => {
+          if (child.userData.tile === trap.userData.tile && child !== trap) {
+            if (child.userData.startY === undefined) {
+              child.userData.startY = child.position.y;
+            }
+            child.scale.set(s, s, s);
+            child.position.y = child.userData.startY - yOffset;
+            if (shrinkT >= 1) child.visible = false;
+          }
+        });
+      }
     }
     const fallStart = 0.25;
     const fallT = Math.max(0, fallRef.current.t - fallStart);
@@ -499,11 +517,24 @@ export const ThreeWorld: React.FC<ThreeWorldProps> = ({
         const c = collapsingRef.current[i];
         c.t += dt;
         const shrinkT = Math.min(c.t / 0.5, 1);
-        const s = 1 - shrinkT * shrinkT;
-        c.mesh.scale.set(Math.max(s, 0.001), Math.max(s, 0.001), Math.max(s, 0.001));
-        c.mesh.position.y = c.startY - (shrinkT * shrinkT * 2.0); 
-        if (shrinkT >= 1) {
-          c.mesh.visible = false;
+        const s = Math.max(1 - shrinkT * shrinkT, 0.001);
+        const yOffset = shrinkT * shrinkT * 2.0;
+        
+        c.mesh.scale.set(s, s, s);
+        c.mesh.position.y = c.startY - yOffset;
+        if (shrinkT >= 1) c.mesh.visible = false;
+
+        if (world) {
+          world.group.children.forEach(child => {
+            if (child.userData.tile === c.mesh.userData.tile && child !== c.mesh) {
+              if (child.userData.startY === undefined) {
+                child.userData.startY = child.position.y;
+              }
+              child.scale.set(s, s, s);
+              child.position.y = child.userData.startY - yOffset;
+              if (shrinkT >= 1) child.visible = false;
+            }
+          });
         }
       }
       
