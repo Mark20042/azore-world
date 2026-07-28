@@ -1,17 +1,19 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { ThreeWorld } from './components/ThreeWorld';
-import { Sun, Moon, Trophy, Skull, RotateCcw, Smartphone, Volume2, VolumeX } from 'lucide-react';
+import { Sun, Moon, Trophy, Skull, RotateCcw, Smartphone, Volume2, VolumeX, Flame } from 'lucide-react';
 import type { LightingMode, MapPreset, CharacterState } from './types/game';
 import { MAP_PRESETS, generateRandomMap } from './utils/maps';
 import { LIGHTING_PALETTES } from './utils/isometric';
 import { playClickSound } from './utils/audio';
 import { InstructionsModal } from './components/InstructionsModal';
 import { AzoreIntro } from './components/AzoreIntro';
+import { ResetConfirmModal } from './components/ResetConfirmModal';
 type BootPhase = 'intro' | 'instructions' | 'ready';
 export function App() {
   const [wins, setWins] = useState(0);
   const [losses, setLosses] = useState(0);
   const [winstreak, setWinstreak] = useState(0);
+  const [highestStreak, setHighestStreak] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [mapPreset, setMapPreset] = useState<MapPreset>(MAP_PRESETS[0]);
   const [lighting, setLighting] = useState<LightingMode>('day');
@@ -26,6 +28,7 @@ export function App() {
   const [phase, setPhase] = useState<BootPhase>(() =>
     typeof navigator !== 'undefined' && navigator.webdriver ? 'ready' : 'intro'
   );
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [firstVisit, setFirstVisit] = useState(false);
   const firstVisitRef = useRef(false);
   useEffect(() => {
@@ -43,43 +46,55 @@ export function App() {
     const savedWins = parseInt(localStorage.getItem('azore_world_wins') || '0', 10);
     const savedLosses = parseInt(localStorage.getItem('azore_world_losses') || '0', 10);
     const savedStreak = parseInt(localStorage.getItem('azore_world_winstreak') || '0', 10);
+    const savedHighestStreak = parseInt(localStorage.getItem('azore_world_highest_streak') || '0', 10);
     setWins(savedWins);
     setLosses(savedLosses);
     setWinstreak(savedStreak);
+    setHighestStreak(savedHighestStreak);
     setMapPreset(prev => generateRandomMap(prev.id, savedWins));
   }, []);
   useEffect(() => { firstVisitRef.current = firstVisit; }, [firstVisit]);
   const handleGameOver = useCallback((isWin: boolean) => {
-    setWins(prevWins => {
-      const newWins = isWin ? prevWins + 1 : prevWins;
-      localStorage.setItem('azore_world_wins', newWins.toString());
-      setLosses(prevLosses => {
-        const newLosses = !isWin ? prevLosses + 1 : prevLosses;
-        localStorage.setItem('azore_world_losses', newLosses.toString());
-        setMapPreset(prev => generateRandomMap(prev.id, newWins));
-        return newLosses;
-      });
-      setWinstreak(prevStreak => {
-        const newStreak = isWin ? prevStreak + 1 : 0;
-        localStorage.setItem('azore_world_winstreak', newStreak.toString());
-        return newStreak;
-      });
-      return newWins;
-    });
-  }, []);
+    const newWins = isWin ? wins + 1 : wins;
+    const newLosses = !isWin ? losses + 1 : losses;
+    const newStreak = isWin ? winstreak + 1 : 0;
+    // Only record a "Best" streak if they hit 3 or more consecutive wins
+    const newHighest = newStreak >= 3 ? Math.max(highestStreak, newStreak) : highestStreak;
+
+    setWins(newWins);
+    setLosses(newLosses);
+    setWinstreak(newStreak);
+    setHighestStreak(newHighest);
+
+    localStorage.setItem('azore_world_wins', newWins.toString());
+    localStorage.setItem('azore_world_losses', newLosses.toString());
+    localStorage.setItem('azore_world_winstreak', newStreak.toString());
+    localStorage.setItem('azore_world_highest_streak', newHighest.toString());
+
+    setMapPreset(prev => generateRandomMap(prev.id, newWins));
+  }, [wins, losses, winstreak, highestStreak]);
   const isDark = lighting === 'cyber';
   const skyBackground = LIGHTING_PALETTES[lighting].skyBg;
-  const resetStats = () => {
-    if (window.confirm('Are you sure you want to reset your wins and losses?')) {
-      playClickSound(false);
-      setWins(0);
-      setLosses(0);
-      setWinstreak(0);
-      localStorage.setItem('azore_world_wins', '0');
-      localStorage.setItem('azore_world_losses', '0');
-      localStorage.setItem('azore_world_winstreak', '0');
-      setMapPreset(prev => generateRandomMap(prev.id, 0));
-    }
+  const requestReset = () => {
+    playClickSound(false);
+    setShowResetConfirm(true);
+  };
+
+  const confirmReset = () => {
+    setWins(0);
+    setLosses(0);
+    setWinstreak(0);
+    setHighestStreak(0);
+    localStorage.setItem('azore_world_wins', '0');
+    localStorage.setItem('azore_world_losses', '0');
+    localStorage.setItem('azore_world_winstreak', '0');
+    localStorage.setItem('azore_world_highest_streak', '0');
+    setMapPreset(prev => generateRandomMap(prev.id, 0));
+    setShowResetConfirm(false);
+  };
+
+  const cancelReset = () => {
+    setShowResetConfirm(false);
   };
   const toggleTheme = () => {
     playClickSound(false);
@@ -124,12 +139,16 @@ export function App() {
           <Trophy size={18} />
           <span>{wins}</span>
         </div>
-        <div className="stat-pill losses">
+        <div className="stat-pill losses" title="Losses">
           <Skull size={18} />
           <span>{losses}</span>
         </div>
+        <div className="stat-pill winstreak" title="Current and Highest Win Streak">
+          <Flame size={18} style={{ color: '#f97316' }} />
+          <span>{winstreak >= 3 ? winstreak : 0}x (Best: {highestStreak})</span>
+        </div>
         <button 
-          onClick={resetStats}
+          onClick={requestReset}
           className="stat-pill reset-btn"
           title="Reset Stats"
           style={{ pointerEvents: 'auto' }}
@@ -188,6 +207,14 @@ export function App() {
       {/* Azore World boot: intro → instructions (first visit) → world */}
       {phase === 'intro' && <AzoreIntro onComplete={handleIntroComplete} />}
       {phase === 'instructions' && <InstructionsModal onClose={closeInstructions} />}
+      
+      {/* Modals */}
+      {showResetConfirm && (
+        <ResetConfirmModal 
+          onConfirm={confirmReset} 
+          onCancel={cancelReset} 
+        />
+      )}
     </main>
   );
 }
