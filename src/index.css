@@ -775,6 +775,58 @@ html, body, #root {
   100% { transform: rotate(0deg); }
 }
 
+/* ==========================================================================
+   WINSTREAK LOTTIE FIRE ANIMATION
+   ========================================================================== */
+.winstreak-fire-container {
+  position: fixed;
+  bottom: 80px;
+  left: 20px;
+  z-index: 50;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: fireFadeIn 0.5s ease-out;
+}
+
+.winstreak-fire-lottie {
+  width: 80px;
+  height: 80px;
+  opacity: 0.95;
+  filter: drop-shadow(0 0 16px rgba(249, 115, 22, 0.4));
+}
+
+.winstreak-fire-text {
+  font-size: 38px;
+  font-weight: 800;
+  font-family: 'Outfit', sans-serif;
+  color: #ffffff;
+  text-shadow: 0 0 12px rgba(249, 115, 22, 0.8), 0 0 24px rgba(249, 115, 22, 0.4);
+  letter-spacing: 1px;
+  margin-left: -4px;
+}
+
+@keyframes fireFadeIn {
+  from { opacity: 0; transform: scale(0.5) translateY(20px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@media (max-width: 768px) {
+  .winstreak-fire-container {
+    bottom: 95px; /* Stay above the compact mobile stats */
+    left: 16px;
+    gap: 4px;
+  }
+  .winstreak-fire-lottie {
+    width: 60px;
+    height: 60px;
+  }
+  .winstreak-fire-text {
+    font-size: 30px;
+  }
+}
+
 @media (max-width: 480px) {
   .game-toast-sub { display: none; }
 }

@@ -61,7 +61,7 @@ export function findPath(
       if (nc.x < 0 || nc.x >= gridWidth || nc.y < 0 || nc.y >= gridHeight) continue;
       const neighborTile = tileMap.get(`${nc.x},${nc.y}`);
       if (!neighborTile) continue;
-      if (neighborTile.terrain === 'water' || (neighborTile as any).isCollapsed || neighborTile.hasTree || neighborTile.hasRock) continue;
+      if (!neighborTile.walkable || neighborTile.terrain === 'water' || (neighborTile as any).isCollapsed || neighborTile.hasTree || neighborTile.hasRock) continue;
       const neighborKey = `${nc.x},${nc.y}`;
       if (closedSet.has(neighborKey)) continue;
       let stepCost = neighborTile.terrain === 'path' ? 0.8 : 1.0;

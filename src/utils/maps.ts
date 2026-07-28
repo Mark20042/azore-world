@@ -1,4 +1,5 @@
 import type { MapPreset, GridTile } from '../types/game';
+import { findPath } from './pathfinding';
 export function createMountainPassMap(seed = 1337, difficulty = 0): MapPreset {
   const width = 10;
   const height = 10;
@@ -312,8 +313,33 @@ const GENERATORS: Record<string, (seed: number, difficulty?: number) => MapPrese
 let roundCounter = 0;
 export function generateRandomMap(preferredId?: string, difficulty = 0): MapPreset {
   const id = preferredId && GENERATORS[preferredId] ? preferredId : 'mountain-pass';
+  
+  // Try up to 50 times to generate a map with a safe path
+  for (let attempt = 0; attempt < 50; attempt++) {
+    roundCounter += 1;
+    const seed = (Date.now() ^ (roundCounter * 0x9e3779b1)) >>> 0;
+    const map = GENERATORS[id](seed, difficulty);
+    
+    // Validate path
+    const goalTile = map.tiles.find(t => t.isGoal);
+    if (goalTile) {
+      // Treat traps as unwalkable to ensure a 100% safe path exists
+      const safeTiles = map.tiles.map(t => ({
+        ...t,
+        walkable: t.walkable && !t.isTrap
+      }));
+      
+      const path = findPath(map.startPos, goalTile, safeTiles, map.gridWidth, map.gridHeight);
+      if (path.length > 0) {
+        return map;
+      }
+    } else {
+      return map;
+    }
+  }
+  
+  // Fallback if somehow impossible
   roundCounter += 1;
-  const seed = (Date.now() ^ (roundCounter * 0x9e3779b1)) >>> 0;
-  return GENERATORS[id](seed, difficulty);
+  return GENERATORS[id](Date.now() ^ roundCounter, difficulty);
 }
 export const MAP_PRESETS: MapPreset[] = [createMountainPassMap(1337, 0)];

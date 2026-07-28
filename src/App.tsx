@@ -8,6 +8,7 @@ import { playClickSound } from './utils/audio';
 import { InstructionsModal } from './components/InstructionsModal';
 import { AzoreIntro } from './components/AzoreIntro';
 import { ResetConfirmModal } from './components/ResetConfirmModal';
+import { Player } from '@lottiefiles/react-lottie-player';
 type BootPhase = 'intro' | 'instructions' | 'ready';
 export function App() {
   const [wins, setWins] = useState(0);
@@ -30,6 +31,9 @@ export function App() {
   );
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [firstVisit, setFirstVisit] = useState(false);
+  const [adminMode, setAdminMode] = useState(false);
+  const [hintsRemaining, setHintsRemaining] = useState(3);
+  const [devClickCount, setDevClickCount] = useState(0);
   const firstVisitRef = useRef(false);
   useEffect(() => {
     const migrate = (newKey: string, oldKey: string) => {
@@ -47,10 +51,12 @@ export function App() {
     const savedLosses = parseInt(localStorage.getItem('azore_world_losses') || '0', 10);
     const savedStreak = parseInt(localStorage.getItem('azore_world_winstreak') || '0', 10);
     const savedHighestStreak = parseInt(localStorage.getItem('azore_world_highest_streak') || '0', 10);
+    const savedHints = parseInt(localStorage.getItem('azore_world_hints') || '3', 10);
     setWins(savedWins);
     setLosses(savedLosses);
     setWinstreak(savedStreak);
     setHighestStreak(savedHighestStreak);
+    setHintsRemaining(savedHints);
     setMapPreset(prev => generateRandomMap(prev.id, savedWins));
   }, []);
   useEffect(() => { firstVisitRef.current = firstVisit; }, [firstVisit]);
@@ -61,18 +67,30 @@ export function App() {
     // Only record a "Best" streak if they hit 3 or more consecutive wins
     const newHighest = newStreak >= 3 ? Math.max(highestStreak, newStreak) : highestStreak;
 
+    let newHints = hintsRemaining;
+    if (isWin) {
+      newHints += 1;
+      if (newStreak > 0 && newStreak % 3 === 0) {
+        newHints += 3;
+      }
+    } else {
+      newHints = 3;
+    }
+
     setWins(newWins);
     setLosses(newLosses);
     setWinstreak(newStreak);
     setHighestStreak(newHighest);
+    setHintsRemaining(newHints);
 
     localStorage.setItem('azore_world_wins', newWins.toString());
     localStorage.setItem('azore_world_losses', newLosses.toString());
     localStorage.setItem('azore_world_winstreak', newStreak.toString());
     localStorage.setItem('azore_world_highest_streak', newHighest.toString());
+    localStorage.setItem('azore_world_hints', newHints.toString());
 
     setMapPreset(prev => generateRandomMap(prev.id, newWins));
-  }, [wins, losses, winstreak, highestStreak]);
+  }, [wins, losses, winstreak, highestStreak, hintsRemaining]);
   const isDark = lighting === 'cyber';
   const skyBackground = LIGHTING_PALETTES[lighting].skyBg;
   const requestReset = () => {
@@ -85,10 +103,12 @@ export function App() {
     setLosses(0);
     setWinstreak(0);
     setHighestStreak(0);
+    setHintsRemaining(3);
     localStorage.setItem('azore_world_wins', '0');
     localStorage.setItem('azore_world_losses', '0');
     localStorage.setItem('azore_world_winstreak', '0');
     localStorage.setItem('azore_world_highest_streak', '0');
+    localStorage.setItem('azore_world_hints', '3');
     setMapPreset(prev => generateRandomMap(prev.id, 0));
     setShowResetConfirm(false);
   };
@@ -132,7 +152,7 @@ export function App() {
           height: '100%'
         }}
       />
-      {/* Developer Name Watermark Removed from here */}
+     
       {}
       <div className="stats-container">
         <div className="stat-pill wins">
@@ -143,9 +163,9 @@ export function App() {
           <Skull size={18} />
           <span>{losses}</span>
         </div>
-        <div className="stat-pill winstreak" title="Current and Highest Win Streak">
+        <div className="stat-pill winstreak" title="Highest Win Streak">
           <Flame size={18} style={{ color: '#f97316' }} />
-          <span>{winstreak >= 3 ? winstreak : 0}x (Best: {highestStreak})</span>
+          <span>Best: {highestStreak}</span>
         </div>
         <button 
           onClick={requestReset}
@@ -162,6 +182,14 @@ export function App() {
           rel="noopener noreferrer" 
           className="stat-pill dev-pill" 
           style={{ pointerEvents: 'auto', textDecoration: 'none', color: 'rgba(255,255,255,0.85)' }}
+          onClick={(e) => {
+            setDevClickCount(prev => prev + 1);
+            if (devClickCount >= 4) {
+              e.preventDefault();
+              setAdminMode(prev => !prev);
+              setDevClickCount(0);
+            }
+          }}
         >
           <span className="dev-prefix">Developed By:</span> <span style={{ color: '#ffffff', fontWeight: 600 }}>Mark Joseph Potot</span>
         </a>
@@ -180,6 +208,9 @@ export function App() {
         wins={wins}
         winstreak={winstreak}
         isMuted={isMuted}
+        isAdminMode={adminMode}
+        hintsRemaining={hintsRemaining}
+        setHintsRemaining={setHintsRemaining}
       />
       <div className="top-right-controls" style={{ display: 'flex', gap: '12px', zIndex: 100, alignItems: 'center' }}>
         <button 
@@ -214,6 +245,14 @@ export function App() {
           onConfirm={confirmReset} 
           onCancel={cancelReset} 
         />
+      )}
+
+      {/* Winstreak Fire Animation */}
+      {winstreak >= 3 && (
+        <div className="winstreak-fire-container">
+          <Player src="/streak.json" loop autoplay className="winstreak-fire-lottie" />
+          <span className="winstreak-fire-text">{winstreak}x</span>
+        </div>
       )}
     </main>
   );

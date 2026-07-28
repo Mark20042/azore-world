@@ -13,7 +13,7 @@ import {
 import { createChibiBoy, type ChibiCharacter } from '../three/ChibiCharacter';
 import { buildWorld, disposeWorld, tileToWorld, type BuiltWorld } from '../three/buildWorld';
 import { SpeechBubble } from './SpeechBubble';
-import { ZoomIn, ZoomOut, Maximize2, Trophy, Skull } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize2, Trophy, Skull, Lightbulb } from 'lucide-react';
 interface ThreeWorldProps {
   mapPreset: MapPreset;
   lighting: LightingMode;
@@ -23,6 +23,9 @@ interface ThreeWorldProps {
   wins: number;
   winstreak: number;
   isMuted: boolean;
+  isAdminMode?: boolean;
+  hintsRemaining: number;
+  setHintsRemaining: React.Dispatch<React.SetStateAction<number>>;
 }
 type PlayMode = 'idle' | 'walking' | 'falling' | 'won' | 'ended';
 interface WalkPath {
@@ -42,7 +45,10 @@ export const ThreeWorld: React.FC<ThreeWorldProps> = ({
   onGameOver,
   wins,
   winstreak,
-  isMuted
+  isMuted,
+  isAdminMode = false,
+  hintsRemaining,
+  setHintsRemaining
 }) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -57,6 +63,7 @@ export const ThreeWorld: React.FC<ThreeWorldProps> = ({
   const charTileRef = useRef<Point3D>({ ...mapPreset.startPos });
   const fallRef = useRef({ t: 0, fromY: 0, trapMesh: null as THREE.Mesh | null });
   const collapsingRef = useRef<{ mesh: THREE.Mesh; t: number; startY: number }[]>([]);
+  const hintedTileRef = useRef<{ mesh: THREE.Mesh; t: number; startY: number } | null>(null);
   const wonRef = useRef({ t: 0 });
   const camTargetRef = useRef(new THREE.Vector3(0, 0.4, 0));
   const presetRef = useRef<MapPreset>(mapPreset);
@@ -83,6 +90,72 @@ export const ThreeWorld: React.FC<ThreeWorldProps> = ({
   const [zoom, setZoom] = useState(getInitialZoom);
   const [bubblePos, setBubblePos] = useState({ x: -999, y: -999 });
   const isPortraitRef = useRef(window.innerWidth < window.innerHeight);
+
+  useEffect(() => {
+    hintedTileRef.current = null;
+  }, [mapPreset.id]);
+
+  const handleSafeStepHint = () => {
+    if (hintsRemaining <= 0 || modeRef.current !== 'idle') return;
+    
+    playClickSound(mutedRef.current);
+    const world = worldRef.current;
+    if (!world) return;
+
+    const preset = presetRef.current;
+    const goalTile = preset.tiles.find(t => t.isGoal);
+    if (!goalTile) return;
+
+    const path = findPath(charTileRef.current, goalTile, preset.tiles, preset.gridWidth, preset.gridHeight);
+    if (path.length > 1) {
+      const nextStep = path[1];
+      const mesh = world.tileMeshes.find(m => {
+        const t = m.userData.tile as GridTile;
+        return t.x === nextStep.x && t.y === nextStep.y && t.z === nextStep.z;
+      });
+      if (mesh) {
+        hintedTileRef.current = { mesh, t: 0, startY: mesh.position.y };
+        setHintsRemaining(prev => prev - 1);
+        setCharacterState(prev => ({
+          ...prev,
+          speechText: "That way!",
+          speechEmoji: "💡",
+          speechId: Date.now()
+        }));
+      }
+    }
+  };
+
+  useEffect(() => {
+    const world = worldRef.current;
+    if (!world) return;
+    
+    // First, remove existing markers
+    const toRemove = world.group.children.filter(c => c.name === 'adminTrapMarker');
+    toRemove.forEach(c => {
+      if (c instanceof THREE.Mesh) {
+        c.geometry.dispose();
+        (c.material as THREE.Material).dispose();
+      }
+      world.group.remove(c);
+    });
+
+    if (isAdminMode) {
+      const geo = new THREE.PlaneGeometry(0.8, 0.8);
+      const mat = new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.6 });
+      world.tileMeshes.forEach(m => {
+        const tile = m.userData.tile as GridTile;
+        if (tile.isTrap) {
+          const marker = new THREE.Mesh(geo, mat);
+          marker.rotation.x = -Math.PI / 2;
+          marker.position.copy(m.position);
+          marker.position.y += 0.51; // Just above the tile surface
+          marker.name = 'adminTrapMarker';
+          world.group.add(marker);
+        }
+      });
+    }
+  }, [isAdminMode, mapPreset.id]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -230,26 +303,20 @@ export const ThreeWorld: React.FC<ThreeWorldProps> = ({
     }));
   };
   const startMoveTo = (tile: GridTile) => {
-    console.log('[startMoveTo] mode:', modeRef.current, 'tile:', tile.x, tile.y, 'walkable:', tile.walkable, 'terrain:', tile.terrain);
     if (modeRef.current !== 'idle') {
-      console.log('[startMoveTo] BLOCKED: mode is', modeRef.current);
       return;
     }
-    if (tile.terrain === 'water' || tile.hasTree || tile.hasRock) {
-      console.log('[startMoveTo] BLOCKED: obstacle tile');
+    if (!tile.walkable && !tile.isGoal) {
       return;
     }
     const start = charTileRef.current;
     const distance = Math.abs(tile.x - start.x) + Math.abs(tile.y - start.y);
     if (distance !== 1) {
-      console.log('[startMoveTo] BLOCKED: tile is too far away');
       return;
     }
     playClickSound(mutedRef.current);
     const preset = presetRef.current;
-    console.log('[startMoveTo] charTile:', start.x, start.y, start.z, '→ target:', tile.x, tile.y, tile.z);
-    const path = findPath(start, { x: tile.x, y: tile.y, z: tile.z }, preset.tiles, preset.gridWidth, preset.gridHeight);
-    console.log('[startMoveTo] path length:', path.length, path);
+    const path = findPath(start, { x: tile.x, y: tile.y, z: tile.z }, presetRef.current.tiles, presetRef.current.gridWidth, presetRef.current.gridHeight);
     if (path.length <= 1) return;
     const tileByKey = new Map(preset.tiles.map(t => [`${t.x},${t.y}`, t]));
     pathRef.current = {
@@ -439,6 +506,19 @@ export const ThreeWorld: React.FC<ThreeWorldProps> = ({
           c.mesh.visible = false;
         }
       }
+      
+      if (hintedTileRef.current) {
+        const hc = hintedTileRef.current;
+        hc.t += dt;
+        // Bounce animation: 2 full bounces over 1.2 seconds
+        if (hc.t < 1.2) {
+          hc.mesh.position.y = hc.startY + Math.abs(Math.sin(hc.t * Math.PI * 3.33)) * 0.15;
+        } else {
+          hc.mesh.position.y = hc.startY;
+          hintedTileRef.current = null;
+        }
+      }
+
       const shadow = shadowRef.current;
       if (shadow) {
         const preset = presetRef.current;
@@ -693,8 +773,18 @@ export const ThreeWorld: React.FC<ThreeWorldProps> = ({
       onPointerLeave={handlePointerCancel}
       onWheel={handleWheel}
     >
-      {}
+      {/* Zoom Controls & Hints */}
       <div className="canvas-zoom-controls">
+        <button
+          onClick={handleSafeStepHint}
+          className={`zoom-btn hint-btn ${hintsRemaining <= 0 ? 'disabled' : ''}`}
+          title="Safe Step Hint"
+          disabled={hintsRemaining <= 0}
+          style={{ opacity: hintsRemaining <= 0 ? 0.5 : 1, cursor: hintsRemaining <= 0 ? 'not-allowed' : 'pointer' }}
+        >
+          <Lightbulb className="zoom-icon" style={{ color: hintsRemaining > 0 ? '#fde047' : '#94a3b8' }} />
+          <span style={{ fontSize: '13px', fontWeight: '800', marginLeft: '6px' }}>{hintsRemaining}</span>
+        </button>
         <button
           onClick={() => setZoom(prev => THREE.MathUtils.clamp(prev + 0.25, 0.25, 2.4))}
           className="zoom-btn"
