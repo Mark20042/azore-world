@@ -151,6 +151,7 @@ export const ThreeWorld: React.FC<ThreeWorldProps> = ({
           marker.position.copy(m.position);
           marker.position.y += 0.51; // Just above the tile surface
           marker.name = 'adminTrapMarker';
+          marker.userData.tile = tile;
           world.group.add(marker);
         }
       });

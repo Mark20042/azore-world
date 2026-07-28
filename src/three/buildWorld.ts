@@ -362,6 +362,7 @@ export function buildWorld(preset: MapPreset, lighting: LightingMode): BuiltWorl
         world.y + 0.02,
         world.z + (rand() - 0.5) * 0.45
       );
+      pebble.userData.tile = tile;
       group.add(pebble);
     }
   });
